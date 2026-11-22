@@ -1,0 +1,255 @@
+spring:
+
+  application:
+    name: e-commerce-product-service
+
+  config:
+    import: 'optional:configserver:http://localhost:8888'
+
+  cloud:
+    openfeign:
+      micrometer:
+        enabled: true
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 2s
+
+
+# ==========================================================
+# RESILIENCE4J CONFIGURATION
+# ==========================================================
+
+resilience4j:
+
+  # --------------------------------------------------------
+  # CIRCUIT BREAKER
+  # --------------------------------------------------------
+
+  circuitbreaker:
+    instances:
+
+      # ====================================================
+      # STOCK SERVICE CIRCUIT BREAKER
+      # ====================================================
+
+      stockServiceCircuitBreaker:
+        slidingWindowType: COUNT_BASED
+
+        # Number of calls considered for failure calculation
+        slidingWindowSize: 10
+
+        # Failure rate will be calculated only after
+        # minimum 5 calls
+        minimumNumberOfCalls: 5
+
+        # Circuit moves to OPEN when failure rate
+        # reaches 50% or more
+        failureRateThreshold: 50
+
+        # Circuit remains OPEN for 10 seconds
+        waitDurationInOpenState: 10s
+
+        # After OPEN -> HALF_OPEN,
+        # allow 3 test calls
+        permittedNumberOfCallsInHalfOpenState: 3
+
+        # Automatically transition:
+        # OPEN -> HALF_OPEN
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+
+
+      # ====================================================
+      # PAYMENT SERVICE CIRCUIT BREAKER
+      # ====================================================
+
+      paymentServiceCircuitBreaker:
+        slidingWindowType: COUNT_BASED
+
+        # Number of calls considered for failure calculation
+        slidingWindowSize: 10
+
+        # Failure rate calculation starts after
+        # minimum 5 calls
+        minimumNumberOfCalls: 5
+
+        # Circuit moves to OPEN when failure rate
+        # reaches 50% or more
+        failureRateThreshold: 50
+
+        # Circuit remains OPEN for 10 seconds
+        waitDurationInOpenState: 10s
+
+        # After OPEN -> HALF_OPEN,
+        # allow 3 test calls
+        permittedNumberOfCallsInHalfOpenState: 3
+
+        # Automatically transition:
+        # OPEN -> HALF_OPEN
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+
+
+      # ====================================================
+      # ORDER HISTORY SERVICE CIRCUIT BREAKER
+      # ====================================================
+
+      orderHistoryServiceCircuitBreaker:
+        slidingWindowType: COUNT_BASED
+
+        # Number of calls considered for failure calculation
+        slidingWindowSize: 10
+
+        # Failure rate calculation starts after
+        # minimum 5 calls
+        minimumNumberOfCalls: 5
+
+        # Circuit moves to OPEN when failure rate
+        # reaches 50% or more
+        failureRateThreshold: 50
+
+        # Circuit remains OPEN for 10 seconds
+        waitDurationInOpenState: 10s
+
+        # After OPEN -> HALF_OPEN,
+        # allow 3 test calls
+        permittedNumberOfCallsInHalfOpenState: 3
+
+        # Automatically transition:
+        # OPEN -> HALF_OPEN
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+
+
+  # --------------------------------------------------------
+  # TIME LIMITER
+  # --------------------------------------------------------
+
+  timelimiter:
+    instances:
+
+      # Stock timeout
+      stockServiceCircuitBreaker:
+        # Product will not wait for Stock
+        # longer than 3 seconds
+        timeoutDuration: 3s
+
+      # Payment timeout
+      paymentServiceCircuitBreaker:
+        # Product will not wait for Payment
+        # longer than 3 seconds
+        timeoutDuration: 3s
+
+      # Order History timeout
+      orderHistoryServiceCircuitBreaker:
+        # Product will not wait for Order History
+        # longer than 3 seconds
+        timeoutDuration: 3s
+
+
+  # --------------------------------------------------------
+  # RETRY
+  # --------------------------------------------------------
+
+  retry:
+    instances:
+
+      # Stock retry
+      stockServiceRetry:
+        # Initial call + 4 retries
+        # = maximum 5 attempts
+        maxAttempts: 5
+
+        # Wait 500 ms between retry attempts
+        waitDuration: 500ms
+
+
+      # Payment retry
+      paymentServiceRetry:
+        # Initial call + 4 retries
+        # = maximum 5 attempts
+        maxAttempts: 5
+
+        # Wait 500 ms between retry attempts
+        waitDuration: 500ms
+
+
+      # Order History retry
+      orderHistoryServiceRetry:
+        # Initial call + 4 retries
+        # = maximum 5 attempts
+        maxAttempts: 5
+
+        # Wait 500 ms between retry attempts
+        waitDuration: 500ms
+
+
+  # --------------------------------------------------------
+  # BULKHEAD
+  # --------------------------------------------------------
+
+  bulkhead:
+    instances:
+
+      # Stock bulkhead
+      stockServiceBulkhead:
+        # Maximum 10 concurrent calls to Stock
+        maxConcurrentCalls: 10
+
+        # Wait maximum 100 ms for an available slot
+        maxWaitDuration: 100ms
+
+
+      # Payment bulkhead
+      paymentServiceBulkhead:
+        # Maximum 10 concurrent calls to Payment
+        maxConcurrentCalls: 10
+
+        # Wait maximum 100 ms for an available slot
+        maxWaitDuration: 100ms
+
+
+      # Order History bulkhead
+      orderHistoryServiceBulkhead:
+        # Maximum 10 concurrent calls to Order History
+        maxConcurrentCalls: 10
+
+        # Wait maximum 100 ms for an available slot
+        maxWaitDuration: 100ms
+
+
+# ==========================================================
+# MANAGEMENT / ACTUATOR / TRACING
+# ==========================================================
+
+management:
+
+  tracing:
+    sampling:
+      probability: 1
+
+    export:
+      zipkin:
+        enabled: true
+        endpoint: 'http://localhost:9411/api/v2/spans'
+
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+
+  endpoint:
+    health:
+      show-details: always
+
+
+# ==========================================================
+# LOGGING
+# ==========================================================
+
+logging:
+
+  pattern:
+    correlation: '[${spring.application.name:},%X{traceId:-},%X{spanId:-}] '
+
+  include-application-name: false
